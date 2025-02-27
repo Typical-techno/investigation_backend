@@ -7,7 +7,7 @@ const SECRET = process.env.JWT_SECRET || 'supersecret';
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { email, password, username, desigination, police_thana } =
+        const { email, password, username, desigination, police_thana, phoneNumber } =
             req.body;
 
         const existingUser = await prisma.user.findUnique({
@@ -25,7 +25,8 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
                 password: hashedPassword,
                 username,
                 desigination,
-                police_thana
+                police_thana,
+                phoneNumber
             }
         });
 
@@ -58,6 +59,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             id: user.id,
             username: user.username,
             email: user.email,
+            phoneNumber: user.phoneNumber,
             desigination: user.desigination,
             police_thana: user.police_thana,
             isActive: user.isActive
