@@ -1,4 +1,3 @@
-
 # IMF Gadget API 🚀
 
 A **secure** REST API built with **Node.js, Express, Prisma, PostgreSQL, and TypeScript** for managing **IMF gadgets**.
@@ -25,6 +24,6 @@ A **secure** REST API built with **Node.js, Express, Prisma, PostgreSQL, and Typ
 ### 1️⃣ Clone Repo
 
 ```sh
-git clone https://github.com/typical-techno/phoenix-dev-challenge.git
-cd phoenix-dev-challenge
+git clone https://github.com/Typical-techno/investigation.erohtak_backend
+cd investigation.erohtak_backend
 ```

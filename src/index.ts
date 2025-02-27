@@ -4,8 +4,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-
-import gadgetRoutes from './routes/gadgetRoutes';
 import authRoutes from './routes/authRoutes';
 
 dotenv.config();
@@ -18,7 +16,6 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
 
-app.use('/api/v1/gadgets', gadgetRoutes);
 app.use("/api/v1/auth", authRoutes);
 
 const PORT = process.env.PORT || 5000;

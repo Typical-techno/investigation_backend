@@ -7,10 +7,11 @@ const SECRET = process.env.JWT_SECRET || 'supersecret';
 
 export const signup = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { username, password } = req.body;
+        const { email, password, username, desigination, police_thana } =
+            req.body;
 
         const existingUser = await prisma.user.findUnique({
-            where: { username }
+            where: { email }
         });
         if (existingUser) {
             res.status(400).json({ error: 'Username already exists' });
@@ -19,7 +20,13 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         await prisma.user.create({
-            data: { username, password: hashedPassword }
+            data: {
+                email,
+                password: hashedPassword,
+                username,
+                desigination,
+                police_thana
+            }
         });
 
         res.status(201).json({ message: 'User created successfully' });
@@ -30,9 +37,9 @@ export const signup = async (req: Request, res: Response): Promise<void> => {
 
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { username, password } = req.body;
+        const { email, password } = req.body;
 
-        const user = await prisma.user.findUnique({ where: { username } });
+        const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
             res.status(401).json({ error: 'Invalid credentials' });
             return;
@@ -47,8 +54,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         const token = jwt.sign({ userId: user.id }, SECRET, {
             expiresIn: '1h'
         });
+        const userData = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            desigination: user.desigination,
+            police_thana: user.police_thana,
+            isActive: user.isActive
+        };
 
-        res.json({ token });
+        res.json({ userData, token });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

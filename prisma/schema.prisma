@@ -11,23 +11,13 @@ model User {
     id       String @id @default(uuid())
     username String @unique
     password String
-    role     String @default("agent") // Roles: agent, admin
-}
-
-model Gadget {
-    id               String    @id @default(uuid())
-    name             String
-    status           Status    @default(Available)
-    createdAt        DateTime  @default(now())
-    updatedAt        DateTime  @updatedAt
-    decommissionedAt DateTime?
-
-    @@map("gadgets")
+    desigination String
+    police_thana String
+    email String @unique
+    isActive Status @default(Active)
 }
 
 enum Status {
-    Available
-    Deployed
-    Destroyed
-    Decommissioned
+    Active
+    Inactive
 }
