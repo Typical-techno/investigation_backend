@@ -3,14 +3,18 @@ import {
     requestOTP,
     verifyOTP,
     checkToken,
+    login,
 } from '../controllers/authController';
 
 const router = express.Router();
 
-// Route to request OTP (Register/Login)
+// Route (Login)
+router.post('/login', login);
+
+// Route to request OTP (Register)
 router.post('/request-otp', requestOTP);
 
-// Route to verify OTP (Registration/Login)
+// Route to verify OTP (Registration)
 router.post('/verify-otp', verifyOTP);
 
 // Route to check JWT token validity

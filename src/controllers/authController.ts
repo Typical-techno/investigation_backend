@@ -7,34 +7,41 @@ import { errorResponse } from '../utils/errorResponse';
 
 const SECRET = process.env.JWT_SECRET || 'supersecret';
 
-// Function to handle user creation or retrieval
-const getOrCreateUser = async (
-    email: string,
-    phoneNumber: string,
-    data: any
-) => {
-    let user = await prisma.user.findUnique({ where: { email } });
-    const userPhoneNumber = user?.phoneNumber;
-    if (!user) {
-        // Check if a user with the same phone number exists
-        const existingUser = await prisma.user.findUnique({
-            where: { email, phoneNumber: userPhoneNumber }
-        });
+// User login handler (without OTP)
+export const login = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { email, password } = req.body;
 
-        if (existingUser) {
-            throw new Error(
-                'A user with this email or phone number already exists.'
-            );
+        if (!email || !password) {
+            return errorResponse(res, 400, 'Email and password are required');
         }
 
-        // Create new user if phone number is also unique
-        user = await prisma.user.create({ data });
-    }
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return errorResponse(res, 404, 'User not found');
+        }
 
-    return user;
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            return errorResponse(res, 401, 'Invalid credentials');
+        }
+
+        if (user.isActive !== 'Active') {
+            return errorResponse(res, 403, 'Admin approval required to log in');
+        }
+
+        const token = jwt.sign({ userId: user.id }, SECRET, {
+            expiresIn: '7d'
+        });
+
+        res.json({ message: 'Login successful', token, user });
+    } catch (error) {
+        console.error('Error in login:', error);
+        return errorResponse(res, 500, 'Something went wrong');
+    }
 };
 
-// Request OTP handler
+// Request OTP for new user registration
 export const requestOTP = async (
     req: Request,
     res: Response
@@ -49,74 +56,62 @@ export const requestOTP = async (
             password
         } = req.body;
 
-        if (!email) {
-            return errorResponse(res, 400, 'Email is required');
-        }
-
         if (!email.endsWith('gov.in')) {
             return errorResponse(res, 400, '.gov mail is required');
         }
 
-        const otpValue = generateOTP();
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins expiry
+        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (existingUser) {
+            return errorResponse(
+                res,
+                400,
+                'User already exists, please log in'
+            );
+        }
 
+        const otpValue = generateOTP();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Fetch or create user
-        const user = await getOrCreateUser(email, phoneNumber, {
-            email,
-            phoneNumber,
-            username,
-            desigination,
-            police_thana,
-            password: hashedPassword,
-            isActive: email.endsWith('gov.in') ? 'Active' : 'Stagging'
+        const user = await prisma.user.create({
+            data: {
+                email,
+                phoneNumber,
+                username,
+                desigination,
+                police_thana,
+                password: hashedPassword,
+                isActive: 'Stagging'
+            }
         });
 
-        // Store OTP
         await prisma.oTP.create({
             data: { userId: user.id, otpValue, expiresAt }
         });
-
-        // Send OTP
         await sendOTP(email, otpValue);
 
         res.status(200).json({ message: 'OTP sent successfully' });
     } catch (error) {
         console.error('Error in requestOTP:', error);
-        return errorResponse(res, 500, `${error}`);
+        return errorResponse(res, 500, 'Something went wrong');
     }
 };
 
-// Verify OTP handler
+// Verify OTP for account activation
 export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
     try {
-        const {
-            otp,
-            email,
-            username,
-            password,
-            phoneNumber,
-            police_thana,
-            desigination
-        } = req.body;
-
-        if (!email || !password || !otp) {
-            return errorResponse(
-                res,
-                400,
-                'Email, Password, and OTP are required'
-            );
+        const { email, otp } = req.body;
+        if (!email || !otp) {
+            return errorResponse(res, 400, 'Email and OTP are required');
         }
 
-        // Fetch OTP record
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) {
+            return errorResponse(res, 404, 'User not found');
+        }
+
         const otpRecord = await prisma.oTP.findFirst({
-            where: {
-                userId: (
-                    await prisma.user.findUnique({ where: { email } })
-                )?.id,
-                otpValue: otp
-            },
+            where: { userId: user.id, otpValue: otp },
             orderBy: { expiresAt: 'desc' }
         });
 
@@ -124,46 +119,13 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
             return errorResponse(res, 400, 'Invalid or expired OTP');
         }
 
-        // Delete OTP after verification
         await prisma.oTP.delete({ where: { id: otpRecord.id } });
-
-        let user = await prisma.user.findUnique({ where: { email } });
-
-        // If user doesn't exist, create one
-        if (!user) {
-            if (!username || !desigination || !police_thana) {
-                return errorResponse(
-                    res,
-                    400,
-                    'Complete details required for signup'
-                );
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 10);
-            user = await prisma.user.create({
-                data: {
-                    email,
-                    phoneNumber,
-                    username,
-                    desigination,
-                    police_thana,
-                    password: hashedPassword,
-                    isActive: email.endsWith('gov.in') ? 'Active' : 'Stagging'
-                }
-            });
-        }
-
-        // Restrict login for non-approved users
-        if (user.isActive === 'Stagging') {
-            return errorResponse(res, 403, 'Admin approval required to log in');
-        }
-
-        // Generate JWT token
-        const token = jwt.sign({ userId: user.id }, SECRET, {
-            expiresIn: '7d'
+        await prisma.user.update({
+            where: { email },
+            data: { isActive: 'Active' }
         });
 
-        res.json({ message: 'OTP verified successfully', token, user });
+        res.json({ message: 'OTP verified successfully. Account activated.' });
     } catch (error) {
         console.error('Error in verifyOTP:', error);
         return errorResponse(res, 500, 'Something went wrong');
