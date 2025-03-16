@@ -5,7 +5,6 @@ import {
     checkToken,
     login,
 } from '../controllers/authController';
-import { TestSendingOTP } from '../utils/testEmailOTP';
 
 const router = express.Router();
 
