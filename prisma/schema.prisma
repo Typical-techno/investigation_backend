@@ -8,17 +8,38 @@ datasource db {
 }
 
 model User {
-    id String @id @default(uuid())
-    username String
-    password String
+    id           String @id @default(uuid())
+    username     String
+    password     String
     desigination String
     police_thana String
-    email String @unique
-    phoneNumber String @unique
-    isActive Status @default(Active)
+    email        String @unique
+    phoneNumber  String @unique
+    isActive     Status @default(Active)
+    OTP          OTP[]
+    photo        String @default("null")
+}
+
+model OTP {
+    id        String   @id @default(uuid())
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    otpValue  String
+    expiresAt DateTime
+}
+
+model Admin {
+    id          String  @id @default(uuid())
+    username    String
+    password    String
+    email       String  @unique
+    phoneNumber String
+    isAdmin     Boolean @default(true)
+    isActive    Boolean @default(true)
 }
 
 enum Status {
     Active
     Inactive
+    Stagging
 }
