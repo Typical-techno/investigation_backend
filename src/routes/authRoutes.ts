@@ -5,6 +5,7 @@ import {
     checkToken,
     login,
 } from '../controllers/authController';
+import { TestSendingOTP } from '../utils/testEmailOTP';
 
 const router = express.Router();
 
@@ -20,6 +21,7 @@ router.post('/verify-otp', verifyOTP);
 // Route to check JWT token validity
 router.get('/me', checkToken);
 
+// router.post('/test-otp', TestSendingOTP)
 // // Route to register a new admin
 // router.post('/register-admin', authenticateAdmin, registerAdmin);
 
