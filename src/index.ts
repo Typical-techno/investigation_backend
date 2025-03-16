@@ -15,7 +15,12 @@ const app: Application = express();
 app.use(express.json());
 app.use(
     cors({
-        origin: 'http://localhost:3000', // Allow all origins (Change this to specific domains for security)
+        origin: [
+            'http://localhost:3000',
+            'https://investigation.erohtak.com',
+            'http://localhost:5500',
+            'http://127.0.0.1:5500'
+        ], // Allow all origins (Change this to specific domains for security)
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
