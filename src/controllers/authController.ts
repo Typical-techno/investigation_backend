@@ -125,7 +125,7 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
             data: { isActive: 'Active' }
         });
 
-        res.json({ message: 'OTP verified successfully. Account activated.' });
+        res.json({ message: 'OTP verified successfully. Account activated.', user });
     } catch (error) {
         console.error('Error in verifyOTP:', error);
         return errorResponse(res, 500, 'Something went wrong');
