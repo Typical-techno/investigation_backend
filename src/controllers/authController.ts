@@ -54,16 +54,29 @@ export const requestOTP = async (
             password
         } = req.body;
 
-        if (!email.endsWith('gov.in')) {
-            return errorResponse(res, 400, '.gov mail is required');
+        if (!email.endsWith('gov.in') && !email.endsWith('nic.in')) {
+            return errorResponse(res, 400, '.gov or .nic mail is required');
         }
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
+        const existingUserEmail = await prisma.user.findUnique({
+            where: { email }
+        });
+        if (existingUserEmail) {
             return errorResponse(
                 res,
                 400,
-                'User already exists, please log in'
+                'User already exists with this mail, please log in'
+            );
+        }
+
+        const existingUserPhone = await prisma.user.findUnique({
+            where: { phoneNumber }
+        });
+        if (existingUserPhone) {
+            return errorResponse(
+                res,
+                400,
+                'User already exists with this Phone Number, please log in'
             );
         }
 
@@ -122,7 +135,10 @@ export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
             data: { isActive: 'Active' }
         });
 
-        res.json({ message: 'OTP verified successfully. Account activated.', user });
+        res.json({
+            message: 'OTP verified successfully. Account activated.',
+            user
+        });
     } catch (error) {
         console.error('Error in verifyOTP:', error);
         return errorResponse(res, 500, 'Something went wrong');
@@ -134,11 +150,7 @@ export const resendOTP = async (req: Request, res: Response): Promise<void> => {
         const { email } = req.body;
 
         if (!email) {
-            return errorResponse(
-                res,
-                400,
-                'Email is required'
-            );
+            return errorResponse(res, 400, 'Email is required');
         }
 
         if (!email.endsWith('gov.in')) {
@@ -204,7 +216,10 @@ export const checkToken = async (
     }
 };
 
-export const requestPasswordReset = async (req: Request, res: Response): Promise<void> => {
+export const requestPasswordReset = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
     try {
         const { email } = req.body;
         if (!email) {
@@ -220,21 +235,32 @@ export const requestPasswordReset = async (req: Request, res: Response): Promise
         const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // OTP expires in 5 minutes
 
         await prisma.oTP.deleteMany({ where: { userId: user.id } });
-        await prisma.oTP.create({ data: { userId: user.id, otpValue, expiresAt } });
+        await prisma.oTP.create({
+            data: { userId: user.id, otpValue, expiresAt }
+        });
 
         await sendOTP(email, otpValue);
-        res.status(200).json({ message: 'Password reset OTP sent successfully' });
+        res.status(200).json({
+            message: 'Password reset OTP sent successfully'
+        });
     } catch (error) {
         console.error('Error in requestPasswordReset:', error);
         return errorResponse(res, 500, 'Something went wrong');
     }
 };
 
-export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+export const resetPassword = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
     try {
         const { email, otp, newPassword } = req.body;
         if (!email || !otp || !newPassword) {
-            return errorResponse(res, 400, 'Email, OTP, and new password are required');
+            return errorResponse(
+                res,
+                400,
+                'Email, OTP, and new password are required'
+            );
         }
 
         const user = await prisma.user.findUnique({ where: { email } });
@@ -252,7 +278,10 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await prisma.user.update({ where: { email }, data: { password: hashedPassword } });
+        await prisma.user.update({
+            where: { email },
+            data: { password: hashedPassword }
+        });
 
         await prisma.oTP.delete({ where: { id: otpRecord.id } });
         res.json({ message: 'Password reset successfully' });
