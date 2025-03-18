@@ -4,6 +4,8 @@ import {
     verifyOTP,
     checkToken,
     login,
+    requestPasswordReset,
+    resetPassword
 } from '../controllers/authController';
 
 const router = express.Router();
@@ -19,6 +21,10 @@ router.post('/verify-otp', verifyOTP);
 
 // Route to check JWT token validity
 router.get('/me', checkToken);
+
+router.post('/forgot-otp', requestPasswordReset);
+
+router.post('/forgot-pass', resetPassword);
 
 // router.post('/test-otp', TestSendingOTP)
 // // Route to register a new admin

@@ -19,7 +19,8 @@ app.use(
             'http://localhost:3000',
             'https://investigation.erohtak.com',
             'http://localhost:5500',
-            'http://127.0.0.1:5500'
+            'http://127.0.0.1:5500',
+            'http://localhost:5173'
         ], // Allow all origins (Change this to specific domains for security)
         methods: ['GET', 'POST', 'PUT', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization'],
